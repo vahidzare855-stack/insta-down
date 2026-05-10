@@ -27,8 +27,7 @@ jobs:
 
       - name: Download reel
         run: |
-          yt-dlp --cookies-from-browser firefox --cookies-from-browser chrome "${{ github.event.inputs.reel_url }}" -o "downloads/%(title)s.%(ext)s"
-        # The --cookies-from-browser flags are to attempt to use cookies if logged in, requires browser to be installed or cookies to be exported. For simplicity and public reels, you might not need this.
+          yt-dlp "${{ github.event.inputs.reel_url }}" -o "downloads/%(title)s.%(ext)s"
 
       - name: Commit and push new reel
         run: |
@@ -45,4 +44,3 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is used for pushing back to the repo
-
