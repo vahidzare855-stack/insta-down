@@ -1,0 +1,42 @@
+name: Download Instagram Reels
+
+on:
+  workflow_dispatch:
+    inputs:
+      reel_url:
+        description: 'Instagram reel URL to download'
+        required: true
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install yt-dlp
+        run: |
+          sudo apt update
+          sudo apt install -y yt-dlp
+
+      - name: Download reel
+        run: |
+          mkdir -p downloads
+          yt-dlp "${{ github.event.inputs.reel_url }}" -o "downloads/%(title)s.%(ext)s"
+
+      - name: Upload to repo (optional)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add downloads
+          git commit -m "Add new downloaded reel"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload as artifact (optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: downloaded-reels
+          path: downloads/
