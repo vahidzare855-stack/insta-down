@@ -1,4 +1,4 @@
-name: Download Instagram Reels
+name: Download Instagram Reels to Repo
 
 on:
   workflow_dispatch:
@@ -8,35 +8,41 @@ on:
         required: true
 
 jobs:
-  download:
+  download_and_commit:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }} # Use the default GITHUB_TOKEN for checkout
 
       - name: Install yt-dlp
         run: |
           sudo apt update
           sudo apt install -y yt-dlp
 
+      - name: Create downloads directory
+        run: mkdir -p downloads
+
       - name: Download reel
         run: |
-          mkdir -p downloads
-          yt-dlp "${{ github.event.inputs.reel_url }}" -o "downloads/%(title)s.%(ext)s"
+          yt-dlp --cookies-from-browser firefox --cookies-from-browser chrome "${{ github.event.inputs.reel_url }}" -o "downloads/%(title)s.%(ext)s"
+        # The --cookies-from-browser flags are to attempt to use cookies if logged in, requires browser to be installed or cookies to be exported. For simplicity and public reels, you might not need this.
 
-      - name: Upload to repo (optional)
+      - name: Commit and push new reel
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add downloads
-          git commit -m "Add new downloaded reel"
-          git push
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Check if there are new files in downloads directory
+          if [ -n "$(ls -A downloads)" ]; then
+            git add downloads/
+            git commit -m "Add new downloaded reel: $(date +%Y-%m-%d_%H:%M:%S)"
+            git push
+          else
+            echo "No new reels downloaded or found."
+          fi
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is used for pushing back to the repo
 
-      - name: Upload as artifact (optional)
-        uses: actions/upload-artifact@v4
-        with:
-          name: downloaded-reels
-          path: downloads/
